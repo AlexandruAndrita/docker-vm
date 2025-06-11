@@ -15,10 +15,8 @@ app = Flask(__name__)
 VM_IP = os.getenv("VM_IP")
 PORT = os.getenv("PORT")
 SSH_USER = os.getenv("SSH_USER")
-SSH_KEY_PATH = os.getenv("SSH_KEY_PATH")
 
-
-def connect_ssh(ip, username, key_path):
+def connect_ssh(ip, username):
     """Establish SSH connection and return client."""
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -26,7 +24,12 @@ def connect_ssh(ip, username, key_path):
     for attempt in range(retries):
         try:
             print(f"Attempt {attempt + 1} to connect to VM...")
-            private_key = paramiko.RSAKey.from_private_key_file(key_path)
+            key_data = os.getenv("SSH_PRIVATE_KEY")
+            if not key_data:
+                raise Exception("Missing SSH_PRIVATE_KEY environmental variable")
+            key_data = key_data.replace("\\n", "\n")
+            key_file = io.StringIO(key_data)
+            private_key = paramiko.RSAKey.from_private_key(key_file)
             ssh.connect(hostname=ip, username=username, pkey=private_key, timeout=20, banner_timeout=30)
             print("SSH connected")
             return ssh
@@ -78,7 +81,7 @@ def upload_and_predict():
         if not files:
             return "No files uploaded", 400
         try:
-            ssh = connect_ssh(VM_IP, SSH_USER, SSH_KEY_PATH)
+            ssh = connect_ssh(VM_IP, SSH_USER)
             run_docker_container(ssh)
             predictions = send_curl_request(files)
             plot_url = create_plot(predictions)
