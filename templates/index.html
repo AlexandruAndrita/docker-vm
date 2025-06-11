@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/static/css/index.css">
+    <title>Upload DICOM Files</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload DICOM Files</h1>
+
+        <form method="post" enctype="multipart/form-data">
+            <input type="file" id="dicoms" name="dicoms" accept=".dcm" multiple required>
+            <button type="submit" id="computePrediction">Compute prediction</button>
+        </form>
+
+        {% if plot_url %}
+            <img src="data:image/png;base64,{{ plot_url }}" alt="Mirai Predictions"/>
+        {% endif %}
+    </div>
+</body>
+</html>
