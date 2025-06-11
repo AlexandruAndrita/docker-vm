@@ -3,10 +3,19 @@ import requests
 import paramiko
 import json
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
+from flask import Flask, request, render_template
+import io
+import base64
+import os
 
-VM_IP = "<vm_ip>"
-SSH_USER = "azureuser"
-SSH_KEY_PATH = "<local_path_to_ssh_key>"
+app = Flask(__name__)
+
+VM_IP = os.getenv("VM_IP")
+PORT = os.getenv("PORT")
+SSH_USER = os.getenv("SSH_USER")
+SSH_KEY_PATH = os.getenv("SSH_KEY_PATH")
 
 
 def connect_ssh(ip, username, key_path):
@@ -29,26 +38,27 @@ def connect_ssh(ip, username, key_path):
 def run_docker_container(ssh_client):
     """Run Docker container via SSH."""
     docker_cmd = r"""
-    docker run ...
+    docker run -d -p 5000:5000 \
+        -v /home/azureuser/oncodata_wrapper.py:/root/oncoserve/oncodata_wrapper.py \
+        -v /home/azureuser/dicom_to_png.py:/root/OncoData/oncodata/dicom_to_png/dicom_to_png.py \
+        --shm-size 32G \
+        learn2cure/oncoserve_mirai:0.5.0
     """
-    stdin, stdout, stderr = ssh_client.exec_command(docker_cmd)
+    _, stdout, stderr = ssh_client.exec_command(docker_cmd)
     print("Docker output:", stdout.read().decode())
     print("Docker errors:", stderr.read().decode())
-    # time.sleep(60)
 
-def send_curl_request():
+def send_curl_request(files):
     """Send curl POST request via SSH."""
-    files = [
-        ('mrn', (None, 'a11111111')),
-        ('accession', (None, 'a2222222')),
-        ('dicom', open(r"<image_path>", 'rb')),
-        ('dicom', open(r"<image_path>", 'rb')),
-        ('dicom', open(r"<image_path>", 'rb')),
-        ('dicom', open(r"<image_path>", 'rb')),
-    ]
+    form = {
+        'mrn': 'a11111111',
+        'accession': 'a2222222'
+    }
+    file_data = [('dicom', (f.filename, f.stream, f.mimetype)) for f in files]
+    predictions = None
 
     try:
-        response = requests.post(f'http://{VM_IP}:<port>/serve', files=files)
+        response = requests.post(f'http://{VM_IP}:{PORT}/serve', data=form, files=file_data)
         json_bytes = response.content
         json_str = json_bytes.decode('utf-8')
         data = json.loads(json_str)
@@ -59,28 +69,41 @@ def send_curl_request():
 
     return predictions
 
-def main():
-    ssh = None
+@app.route('/', methods=['GET', 'POST'])
+def upload_and_predict():
     predictions = None
-    try:
-        ssh = connect_ssh(VM_IP, SSH_USER, SSH_KEY_PATH)
-        run_docker_container(ssh)
-        predictions = send_curl_request()
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
-        if ssh:
-            ssh.close()
-            print("SSH connection closed")
+    plot_url = None
+    if request.method == 'POST':
+        files = request.files.getlist('dicoms')
+        if not files:
+            return "No files uploaded", 400
+        try:
+            ssh = connect_ssh(VM_IP, SSH_USER, SSH_KEY_PATH)
+            run_docker_container(ssh)
+            predictions = send_curl_request(files)
+            plot_url = create_plot(predictions)
+        except Exception as e:
+            print(f"Exception occurred while grabbing predictions: {e}")
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"], predictions)
-    plt.title('Mirai Predictions')
-    plt.xlabel('Year')
-    plt.ylabel('Prediction value')
-    plt.grid()
+    return render_template("index.html", plot_url=plot_url)
+
+def create_plot(predictions):
+    xlabels_list = ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"]
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(xlabels_list, predictions)
+    ax.set_title('Mirai Predictions')
+    ax.set_xlabel('Year')
+    ax.set_ylabel('Prediction value')
+    ax.grid()
     plt.tight_layout()
-    plt.show()
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    img_base64 = base64.b64encode(buf.read()).decode('utf-8')
+    buf.close()
+    plt.close(fig)
+    return img_base64
 
 if __name__ == "__main__":
-    main()
+    app.run()
