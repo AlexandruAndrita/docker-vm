@@ -42,7 +42,13 @@ def connect_ssh(ip, username):
 
 def run_docker_container(ssh_client):
     """Run Docker container via SSH."""
-    docker_cmd = os.getenv("DOCKER_RUN_COMMAND")
+    docker_cmd = r"""
+        docker run -d -p 5000:5000 \
+            -v /home/azureuser/oncodata_wrapper.py:/root/oncoserve/oncodata_wrapper.py \
+            -v /home/azureuser/dicom_to_png.py:/root/OncoData/oncodata/dicom_to_png/dicom_to_png.py \
+            --shm-size 32G \
+            learn2cure/oncoserve_mirai:0.5.0
+        """
     if not docker_cmd:
         raise Exception("Missing DOCKER_RUN_COMMAND environmental variable")
     try:
