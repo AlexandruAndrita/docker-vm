@@ -99,7 +99,7 @@ def upload_and_predict():
                 ssh = connect_ssh(VM_IP, SSH_USER)
                 run_docker_container(ssh)
                 time.sleep(15)
-                predictions = send_curl_request(files)
+                predictions = send_curl_request(usable_files)
                 
                 if not predictions:
                     error_message = "No predictions computed"
