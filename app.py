@@ -47,9 +47,13 @@ def run_docker_container(ssh_client):
         --shm-size 32G \
         learn2cure/oncoserve_mirai:0.5.0
     """
-    _, stdout, stderr = ssh_client.exec_command(docker_cmd)
-    print("Docker output:", stdout.read().decode())
-    print("Docker errors:", stderr.read().decode())
+    try:
+        _, stdout, stderr = ssh_client.exec_command(docker_cmd)
+        print("Docker output:", stdout.read().decode())
+        print("Docker errors:", stderr.read().decode())
+    except Exception as e:
+        print(f"Error running Docker container: {e}")
+        raise
 
 def send_curl_request(files):
     """Send curl POST request via SSH."""
@@ -83,7 +87,10 @@ def upload_and_predict():
         try:
             ssh = connect_ssh(VM_IP, SSH_USER)
             run_docker_container(ssh)
+            time.sleep(15)
             predictions = send_curl_request(files)
+            if not predictions:
+                return "No predictions received", 500
             plot_url = create_plot(predictions)
         except Exception as e:
             print(f"Exception occurred while grabbing predictions: {e}")
