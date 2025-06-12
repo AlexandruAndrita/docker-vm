@@ -12,7 +12,7 @@ body {
     text-align: center;
 }
 
-form {
+#uploadForm {
     margin-bottom: 30px;
 }
 
