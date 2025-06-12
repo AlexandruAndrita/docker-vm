@@ -10,6 +10,8 @@ import io
 import base64
 import os
 
+from utils import get_patient_information, validate_and_extract_files
+
 app = Flask(__name__)
 
 VM_IP = os.getenv("VM_IP")
@@ -40,13 +42,9 @@ def connect_ssh(ip, username):
 
 def run_docker_container(ssh_client):
     """Run Docker container via SSH."""
-    docker_cmd = r"""
-    docker run -d -p 5000:5000 \
-        -v /home/azureuser/oncodata_wrapper.py:/root/oncoserve/oncodata_wrapper.py \
-        -v /home/azureuser/dicom_to_png.py:/root/OncoData/oncodata/dicom_to_png/dicom_to_png.py \
-        --shm-size 32G \
-        learn2cure/oncoserve_mirai:0.5.0
-    """
+    docker_cmd = os.getenv("DOCKER_RUN_COMMAND")
+    if not docker_cmd:
+        raise Exception("Missing DOCKER_RUN_COMMAND environmental variable")
     try:
         _, stdout, stderr = ssh_client.exec_command(docker_cmd)
         print("Docker output:", stdout.read().decode())
@@ -78,30 +76,42 @@ def send_curl_request(files):
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_and_predict():
-    predictions = None
-    plot_url = None
+    predictions, plot_url, patient_information, usable_files, error_message = None, None, None, None, None
     if request.method == 'POST':
         files = request.files.getlist('dicoms')
-        if not files:
-            return "No files uploaded", 400
-        try:
-            ssh = connect_ssh(VM_IP, SSH_USER)
-            run_docker_container(ssh)
-            time.sleep(15)
-            predictions = send_curl_request(files)
-            if not predictions:
-                return "No predictions received", 500
-            plot_url = create_plot(predictions)
-        except Exception as e:
-            print(f"Exception occurred while grabbing predictions: {e}")
+        if not files or len(files) < 4:
+            error_message = "No files uploaded"
+        
+        # need to validate files and extract relevant information about the patient
+        usable_files = validate_and_extract_files(files)
+        if len(usable_files) < 4:
+            error_message = "Not enough valid files uploaded"
+        
+        if not error_message:
+            try:
+                patient_information = get_patient_information(usable_files[0])
+                ssh = connect_ssh(VM_IP, SSH_USER)
+                run_docker_container(ssh)
+                time.sleep(15)
+                predictions = send_curl_request(files)
+                
+                if not predictions:
+                    error_message = "No predictions computed"
+                plot_url = create_plot(predictions, patient_information)
+            except Exception as e:
+                error_message = "Error occurred while computing the predictions"
+                print(f"Exception occurred while grabbing predictions: {e}")
 
-    return render_template("index.html", plot_url=plot_url)
+    return render_template("index.html", plot_url=plot_url, error_message=error_message)
 
-def create_plot(predictions):
+def create_plot(predictions, patient_information):
     xlabels_list = ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"]
+    plot_title = "Breast Cancer Risk"
+    if patient_information:
+        plot_title += f" - {patient_information.get('PatientName').replace('^', ' ')} (Patient ID: {patient_information.get('PatientID')})"
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(xlabels_list, predictions)
-    ax.set_title('Mirai Predictions')
+    ax.plot(xlabels_list, predictions, marker='o')
+    ax.set_title(plot_title)
     ax.set_xlabel('Year')
     ax.set_ylabel('Prediction value')
     ax.grid()

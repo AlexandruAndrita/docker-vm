@@ -4,19 +4,36 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" href="/static/css/index.css">
     <title>Upload DICOM Files</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
 </head>
 <body>
     <div class="container">
         <h1>Upload DICOM Files</h1>
+        <p><b>Always choose files from the same study</b></p>
 
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" id="uploadForm">
             <input type="file" id="dicoms" name="dicoms" accept=".dcm" multiple required>
             <button type="submit" id="computePrediction">Compute prediction</button>
         </form>
 
         {% if plot_url %}
-            <img src="data:image/png;base64,{{ plot_url }}" alt="Mirai Predictions"/>
+            <img src="data:image/png;base64,{{ plot_url }}" alt="Breast Cancer Risk"/>
         {% endif %}
     </div>
+
+    <script src="/static/js/index.js"></script>
+
+    {% if error_message %}
+        <script>
+            Swal.close();
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: '{{ error_message }}',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+        </script>
+    {% endif %}
 </body>
 </html>
