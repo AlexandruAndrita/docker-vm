@@ -6,9 +6,14 @@ body {
 }
 
 .container {
-    max-width: 800px;
     margin: 0 auto;
-    padding: 40px 20px;
+    text-align: center;
+}
+
+.header-top-section {
+    background: linear-gradient(to right, #6a11cb, #2575fc);
+    padding: 20px 0 40px 0;
+    margin: 0;
     text-align: center;
 }
 
@@ -23,16 +28,47 @@ input[type="file"] {
     border-radius: 10px;
 }
 
-#computePrediction {
+.button-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+#computePrediction,
+#selectImagesForPrediction {
     padding: 3px 12px;
     cursor: pointer;
     border-radius: 10px;
-    background: #73AD21;
-    color: #ffffff;
+    background: #ffffff;
+    color: black;
+    border-color: black;
+    font-size: 15px;
 }
 
 img {
     max-width: 100%;
     height: auto;
     border: 1px solid #ccc;
+}
+
+.top-text-styling{
+    color: #ffffff;
+}
+
+.select-files-confirm-button{
+    background: #ffffff;
+    color: black;
+}
+
+.select-files-cancel-button{
+    background: #ffffff;
+    color: black;
+}
+
+.select-files-input{
+    background: #ffffff;
+    color: black;
 }

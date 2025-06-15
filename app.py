@@ -11,6 +11,7 @@ import base64
 import os
 
 from utils import get_patient_information, validate_and_extract_files
+from azureStorageConnection import download_from_storage
 
 app = Flask(__name__)
 
@@ -84,23 +85,37 @@ def send_curl_request(files):
 def upload_and_predict():
     predictions, plot_url, patient_information, usable_files, error_message = None, None, None, None, None
     if request.method == 'POST':
-        files = request.files.getlist('dicoms')
-        if not files or len(files) < 4:
-            error_message = "No files uploaded"
-        
-        # need to validate files and extract relevant information about the patient
-        usable_files = validate_and_extract_files(files)
-        if len(usable_files) < 4:
-            error_message = "Not enough valid files uploaded"
-        
-        if not error_message:
+        storage_patient = request.form.get('storage_patient_name').strip().replace(' ', '_')
+        storage_study_instance_uid = request.form.get('storage_study_uid').strip()
+
+        if storage_patient and storage_study_instance_uid:
+            try:
+                downloaded_files_from_storage = download_from_storage(storage_patient, storage_study_instance_uid)
+                usable_files = validate_and_extract_files(downloaded_files_from_storage)
+                if len(usable_files) < 4:
+                    error_message = f"Not enough valid files found in storage for patient '{storage_patient}' with Study UID '{storage_study_instance_uid}'"
+            except Exception as e:
+                print(f"Error while downloading files: {e}")
+                error_message = f"Failed to load files from storage for patient '{storage_patient}' with Study UID '{storage_study_instance_uid}'"
+        else:
+            files = request.files.getlist('dicoms')
+            if not files or len(files) < 4:
+                error_message = "No files uploaded"
+            
+            if not error_message:
+            # need to further validate files and extract relevant information about the patient
+                usable_files = validate_and_extract_files(files)
+                if len(usable_files) < 4:
+                    error_message = "Not enough valid files uploaded"
+            
+        if not error_message and usable_files:
             try:
                 patient_information = get_patient_information(usable_files[0])
-                ssh = connect_ssh(VM_IP, SSH_USER)
-                run_docker_container(ssh)
-                time.sleep(15)
-                predictions = send_curl_request(usable_files)
-                
+                # ssh = connect_ssh(VM_IP, SSH_USER)
+                # run_docker_container(ssh)
+                # time.sleep(15)
+                # predictions = send_curl_request(usable_files) # only for testing purposes
+                predictions = [0.1, 0.2, 0.3, 0.4, 0.5]
                 if not predictions:
                     error_message = "No predictions computed"
                 plot_url = create_plot(predictions, patient_information)
@@ -132,4 +147,4 @@ def create_plot(predictions, patient_information):
     return img_base64
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host='0.0.0.0', port=5000, debug=True)

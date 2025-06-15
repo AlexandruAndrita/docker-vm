@@ -8,13 +8,23 @@
 </head>
 <body>
     <div class="container">
-        <h1>Upload DICOM Files</h1>
-        <p><b>Always choose files from the same study</b></p>
 
-        <form method="post" enctype="multipart/form-data" id="uploadForm">
-            <input type="file" id="dicoms" name="dicoms" accept=".dcm" multiple required>
-            <button type="submit" id="computePrediction">Compute prediction</button>
-        </form>
+        <div class="header-top-section">
+            <h1 class="top-text-styling">Upload DICOM Files</h1>
+            <p class="top-text-styling"><b>Always choose files from the same study</b></p>
+
+            <div class="buttons">
+                <form method="post" enctype="multipart/form-data" id="uploadForm" style="display: contents;">
+                    <input type="file" id="dicoms" name="dicoms" accept=".dcm">
+                    <input type="hidden" name="storage_patient_name" id="storage_patient_name">
+                    <input type="hidden" name="storage_study_uid" id="storage_study_uid">
+                    
+                    <button type="submit" id="computePrediction">Compute prediction</button>
+                </form>
+
+                <button id="selectImagesForPrediction" onClick="grabImagesFromStorage()">Select images from storage</button>
+            </div>
+        </div>
 
         {% if plot_url %}
             <img src="data:image/png;base64,{{ plot_url }}" alt="Breast Cancer Risk"/>
