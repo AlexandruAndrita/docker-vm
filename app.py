@@ -178,4 +178,4 @@ def create_plot(predictions, patient_information):
     return img_base64
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run()
