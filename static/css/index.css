@@ -3,6 +3,10 @@ body {
     background-color: #ffffff;
     margin: 0;
     padding: 0;
+    background-image: url('https://www.webhippocrates.com/web_front/images/hero.svg');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
 }
 
 .container {
@@ -11,7 +15,7 @@ body {
 }
 
 .header-top-section {
-    background: linear-gradient(to right, #6a11cb, #2575fc);
+    /*background: linear-gradient(to right, #5e2ced, #a485fd);*/
     padding: 20px 0 40px 0;
     margin: 0;
     text-align: center;
@@ -46,6 +50,7 @@ input[type="file"] {
     color: black;
     border-color: black;
     font-size: 15px;
+    border: none;
 }
 
 img {
