@@ -5,8 +5,20 @@ body {
     padding: 0;
     background-image: url('https://www.webhippocrates.com/web_front/images/hero.svg');
     background-size: cover;
-    background-position: center center;
+    background-position: top center;
     background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.logo-container {
+    position: absolute;
+    top: 20px;
+    left: 40px;
+}
+
+.logo {
+    height: 60px;
+    border: none;
 }
 
 .container {
@@ -15,7 +27,6 @@ body {
 }
 
 .header-top-section {
-    /*background: linear-gradient(to right, #5e2ced, #a485fd);*/
     padding: 20px 0 40px 0;
     margin: 0;
     text-align: center;
@@ -41,6 +52,12 @@ input[type="file"] {
     margin-top: 20px;
 }
 
+.plot-container{
+    text-align: left;
+    padding-left: 30px;
+}
+
+#uploadImagesToStorage,
 #computePrediction,
 #selectImagesForPrediction {
     padding: 3px 12px;
