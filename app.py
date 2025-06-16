@@ -3,14 +3,17 @@ import requests
 import paramiko
 import json
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as pe
 import matplotlib
 matplotlib.use('Agg')
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
+from azure.storage.blob import BlobServiceClient
 import io
 import base64
 import os
 
 from utils import get_patient_information, validate_and_extract_files
+from azureStorageConnection import download_from_storage
 
 app = Flask(__name__)
 
@@ -80,27 +83,68 @@ def send_curl_request(files):
 
     return predictions
 
+@app.route('/upload_to_storage', methods=['POST'])
+def upload_to_storage():
+    try:
+        files = request.files.getlist('dicoms')
+        patient_name = request.form.get('patient_name').strip()
+        patient_name = patient_name.lower().replace('_', '-')
+        study_uid = request.form.get('study_uid').strip()
+
+        if not files or not patient_name or not study_uid:
+            return jsonify(success=False, message="Missing files or patient info")
+
+        connect_str = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+        container_name = f"{patient_name}-{study_uid}".lower()
+        blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+        container_client = blob_service_client.get_container_client(container_name)
+
+        if not container_client.exists():
+            container_client.create_container()
+
+        for file in files:
+            blob_client = container_client.get_blob_client(file.filename)
+            blob_client.upload_blob(file.stream, overwrite=True)
+
+        return jsonify(success=True, message=f"{len(files)} files uploaded to container '{container_name}'")
+    
+    except Exception as e:
+        print("Upload error:", e)
+        return jsonify(success=False, message="Upload failed")
+
 @app.route('/', methods=['GET', 'POST'])
 def upload_and_predict():
     predictions, plot_url, patient_information, usable_files, error_message = None, None, None, None, None
     if request.method == 'POST':
-        files = request.files.getlist('dicoms')
-        if not files or len(files) < 4:
-            error_message = "No files uploaded"
-        
-        # need to validate files and extract relevant information about the patient
-        usable_files = validate_and_extract_files(files)
-        if len(usable_files) < 4:
-            error_message = "Not enough valid files uploaded"
-        
-        if not error_message:
+        storage_patient = request.form.get('storage_patient_name').strip().replace(' ', '_')
+        storage_study_id = request.form.get('storage_study_id').strip()
+
+        if storage_patient and storage_study_id:
+            try:
+                downloaded_files_from_storage = download_from_storage(storage_patient, storage_study_id)
+                usable_files = validate_and_extract_files(downloaded_files_from_storage)
+                if len(usable_files) < 4:
+                    error_message = f"Not enough valid files found in storage for patient '{storage_patient}' with Study UID '{storage_study_id}'"
+            except Exception as e:
+                print(f"Error while downloading files: {e}")
+                error_message = f"Failed to load files from storage for patient '{storage_patient}' with Study UID '{storage_study_id}'"
+        else:
+            files = request.files.getlist('dicoms')
+            if not files or len(files) < 4:
+                error_message = "No files uploaded"
+            
+            if not error_message:
+                usable_files = validate_and_extract_files(files)
+                if len(usable_files) < 4:
+                    error_message = "Not enough valid files uploaded"
+            
+        if not error_message and usable_files:
             try:
                 patient_information = get_patient_information(usable_files[0])
                 ssh = connect_ssh(VM_IP, SSH_USER)
                 run_docker_container(ssh)
                 time.sleep(15)
                 predictions = send_curl_request(usable_files)
-                
                 if not predictions:
                     error_message = "No predictions computed"
                 plot_url = create_plot(predictions, patient_information)
@@ -116,11 +160,13 @@ def create_plot(predictions, patient_information):
     if patient_information:
         plot_title += f" - {patient_information.get('PatientName').replace('^', ' ')} (Patient ID: {patient_information.get('PatientID')})"
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(xlabels_list, predictions, marker='o')
+    ax.plot(xlabels_list, predictions, color = '#5e2ced', marker='o')
     ax.set_title(plot_title)
     ax.set_xlabel('Year')
     ax.set_ylabel('Prediction value')
     ax.grid()
+    shadow = pe.withSimplePatchShadow(offset=(5, -5), shadow_rgbFace='black', alpha=0.1)
+    ax.set_path_effects([shadow])
     plt.tight_layout()
 
     buf = io.BytesIO()

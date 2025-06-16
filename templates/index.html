@@ -5,19 +5,37 @@
     <link rel="stylesheet" href="/static/css/index.css">
     <title>Upload DICOM Files</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 <body>
-    <div class="container">
-        <h1>Upload DICOM Files</h1>
-        <p><b>Always choose files from the same study</b></p>
+    <div class="logo-container">
+        <img src="https://www.webhippocrates.com/uploads/27/wh-logo-white.svg" alt="Logo" class="logo">
+    </div>
 
-        <form method="post" enctype="multipart/form-data" id="uploadForm">
-            <input type="file" id="dicoms" name="dicoms" accept=".dcm" multiple required>
-            <button type="submit" id="computePrediction">Compute prediction</button>
-        </form>
+    <div class="container">
+        <div class="header-top-section">
+            <h1 class="top-text-styling">Upload DICOM Files</h1>
+            <p class="top-text-styling">(Always choose files from the same study)</p>
+
+            <div class="buttons">
+                <form method="post" enctype="multipart/form-data" id="uploadForm" style="display: contents;">
+                    <input type="file" id="dicoms" name="dicoms" accept=".dcm" multiple required>
+                    <input type="hidden" name="storage_patient_name" id="storage_patient_name">
+                    <input type="hidden" name="storage_study_id" id="storage_study_id">
+
+                    <button type="submit" id="computePrediction">Compute prediction</button>
+                </form>
+
+                <button id="selectImagesForPrediction" onClick="grabImagesFromStorage()">Select images</button>
+                <button id="uploadImagesToStorage" onClick="uploadImagesToStorage()">Upload images</button>
+                <input type="file" id="localDicomFiles" accept=".dcm" multiple style="display: none;">
+            </div>
+        </div>
 
         {% if plot_url %}
-            <img src="data:image/png;base64,{{ plot_url }}" alt="Breast Cancer Risk"/>
+            <div class="plot-container">
+                <img src="data:image/png;base64,{{ plot_url }}" alt="Breast Cancer Risk"/>
+            </div>
         {% endif %}
     </div>
 

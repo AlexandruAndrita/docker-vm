@@ -3,3 +3,4 @@ requests==2.31.0
 paramiko==3.4.0
 matplotlib==3.9.0
 pydicom==3.0.1
+azure-storage-blob==12.25.1
