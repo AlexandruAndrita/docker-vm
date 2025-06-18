@@ -12,7 +12,7 @@ import io
 import base64
 import os
 
-from utils import get_patient_information, validate_and_extract_files
+from utils import get_patient_information, validate_and_extract_files, prepare_plot_information
 from azureStorageConnection import download_from_storage
 
 app = Flask(__name__)
@@ -155,19 +155,17 @@ def upload_and_predict():
     return render_template("index.html", plot_url=plot_url, error_message=error_message)
 
 def create_plot(predictions, patient_information):
-    xlabels_list = ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"]
-    plot_title = "Breast Cancer Risk"
-    if patient_information:
-        plot_title += f" - {patient_information.get('PatientName').replace('^', ' ')} (Patient ID: {patient_information.get('PatientID')})"
-    fig, ax = plt.subplots(figsize=(10, 6))
+    (xlabels_list, predictions, plot_title, wrapped_text) = prepare_plot_information(predictions, patient_information)
+    fig, ax = plt.subplots(figsize=(10, 5))
     ax.plot(xlabels_list, predictions, color = '#5e2ced', marker='o')
     ax.set_title(plot_title)
     ax.set_xlabel('Year')
-    ax.set_ylabel('Prediction value')
+    ax.set_ylabel('Prediction value (%)')
     ax.grid()
     shadow = pe.withSimplePatchShadow(offset=(5, -5), shadow_rgbFace='black', alpha=0.1)
     ax.set_path_effects([shadow])
-    plt.tight_layout()
+    plt.figtext(0.5, 0.03, wrapped_text, wrap=True, horizontalalignment='center', verticalalignment='bottom', fontsize=10, fontstyle='italic')
+    plt.tight_layout(rect=[0, 0.2, 1, 1])
 
     buf = io.BytesIO()
     plt.savefig(buf, format='png')
