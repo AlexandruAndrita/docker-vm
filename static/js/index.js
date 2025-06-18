@@ -54,7 +54,18 @@ function grabImagesFromStorage(){
             return { patientName, studyId };
         }
     }).then((result) => {
-        if (result.isConfirmed) {
+        if (result.isConfirmed) 
+        {
+            Swal.fire({
+                title: 'Processing...',
+                text: 'Please wait while predictions are being computed.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             document.getElementById('storage_patient_name').value = result.value.patientName;
             document.getElementById('storage_study_id').value = result.value.studyId;
             document.getElementById('uploadForm').submit();
