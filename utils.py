@@ -1,5 +1,6 @@
 import pydicom
 from collections import defaultdict
+import textwrap
 
 def get_patient_information(file):
     patient_information = dict()
@@ -58,3 +59,13 @@ def validate_and_extract_files(files):
         print(f"Error while validating and extracting files: {e}")
 
     return []
+
+def prepare_plot_information(predictions, patient_information):
+    xlabels_list = ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"]
+    predictions = [round(pred * 100, 2) for pred in predictions]
+    plot_title = "Breast Cancer Risk"
+    text = "This plot shows the predicted risk of breast cancer over the next 5 years based on the uploaded mammographies."
+    wrapped_text = textwrap.fill(text, width=130)
+    if patient_information:
+        plot_title += f" - {patient_information.get('PatientName').replace('^', ' ')} (Patient ID: {patient_information.get('PatientID')})"
+    return xlabels_list, predictions, plot_title, wrapped_text
