@@ -64,7 +64,7 @@ def prepare_plot_information(predictions, patient_information):
     xlabels_list = ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"]
     predictions = [round(pred * 100, 2) for pred in predictions]
     plot_title = "Breast Cancer Risk"
-    text = "This plot shows the predicted risk of breast cancer over the next 5 years based on uploaded DICOM images. This plot shows the predicted risk of breast cancer over the next 5 years based on uploaded DICOM images. This plot shows the predicted risk of breast cancer over the next 5 years based on uploaded DICOM images."
+    text = "This plot shows the predicted risk of breast cancer over the next 5 years based on the uploaded mammographies."
     wrapped_text = textwrap.fill(text, width=130)
     if patient_information:
         plot_title += f" - {patient_information.get('PatientName').replace('^', ' ')} (Patient ID: {patient_information.get('PatientID')})"

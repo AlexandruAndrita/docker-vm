@@ -165,7 +165,7 @@ def create_plot(predictions, patient_information):
     shadow = pe.withSimplePatchShadow(offset=(5, -5), shadow_rgbFace='black', alpha=0.1)
     ax.set_path_effects([shadow])
     plt.figtext(0.5, 0.03, wrapped_text, wrap=True, horizontalalignment='center', verticalalignment='bottom', fontsize=10, fontstyle='italic')
-    plt.tight_layout(rect=[0, 0.2, 1, 1])
+    plt.tight_layout(rect=[0, 0.1, 1, 1])
 
     buf = io.BytesIO()
     plt.savefig(buf, format='png')
