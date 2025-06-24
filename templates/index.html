@@ -20,7 +20,7 @@
 
             <div class="buttons">
                 <form method="post" enctype="multipart/form-data" id="uploadForm" style="display: contents;">
-                    <input type="file" id="dicoms" name="dicoms" accept=".dcm" multiple required>
+                    <input type="file" id="dicoms" name="dicoms" multiple required>
                     <input type="hidden" name="storage_patient_name" id="storage_patient_name">
                     <input type="hidden" name="storage_study_id" id="storage_study_id">
 
@@ -29,7 +29,7 @@
 
                 <button id="selectImagesForPrediction" onClick="grabImagesFromStorage()">Select images</button>
                 <button id="uploadImagesToStorage" onClick="uploadImagesToStorage()">Upload images</button>
-                <input type="file" id="localDicomFiles" accept=".dcm" multiple style="display: none;">
+                <input type="file" id="localDicomFiles" multiple style="display: none;">
             </div>
         </div>
 
